@@ -1,0 +1,102 @@
+{
+  "name": "Smart Urban Planning Assistant – Bengaluru (Full Orchestration)",
+  "nodes": [
+    {
+      "parameters": {"path":"urban-planning-bengaluru","responseMode":"responseNode","options":{}},
+      "id":"1","name":"Planner Webhook","type":"n8n-nodes-base.webhook","typeVersion":2,"position":[0,0]
+    },
+    {
+      "parameters": {
+        "jsCode":"const q = $json.body?.query || $json.query || '';\nreturn [{json:{query:q}}];"
+      },
+      "id":"2","name":"Planner Orchestrator","type":"n8n-nodes-base.code","typeVersion":2,"position":[220,0]
+    },
+    {
+      "parameters": {
+        "method":"POST",
+        "url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/scenario/parse",
+        "sendBody":true,
+        "specifyBody":"json",
+        "jsonBody":"={{ {query: $('Planner Orchestrator').item.json.query} }}",
+        "options":{}
+      },
+      "id":"3","name":"Parse Scenario","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[440,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/digital-twin/context",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {latitude: $('Parse Scenario').item.json.location.latitude, longitude: $('Parse Scenario').item.json.location.longitude, radius_m: 500} }}",
+        "options":{}
+      },
+      "id":"4","name":"Digital Twin Context","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[660,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/spatial/analyze",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {latitude: $('Parse Scenario').item.json.location.latitude, longitude: $('Parse Scenario').item.json.location.longitude, radius_m: 500, development_type: $('Parse Scenario').item.json.development_type} }}",
+        "options":{}
+      },
+      "id":"5","name":"Spatial Analysis","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[880,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/rag/search",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {query: $('Planner Orchestrator').item.json.query, top_k: 8} }}",
+        "options":{}
+      },
+      "id":"6","name":"Planning RAG","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1100,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/scenario/analyze",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {location: $('Parse Scenario').item.json.location, radius_m: 500, development: {type: $('Parse Scenario').item.json.development_type, units: $('Parse Scenario').item.json.units}} }}",
+        "options":{}
+      },
+      "id":"7","name":"Scenario + Impact Analysis","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1320,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/design/alternatives",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {site:{center:$('Parse Scenario').item.json.location, area_m2:40000}, development:{type:$('Parse Scenario').item.json.development_type, units:$('Parse Scenario').item.json.units}, existing_context:$('Digital Twin Context').item.json, planning_rules:$('Scenario + Impact Analysis').item.json.planning_knowledge, impact_analysis:$('Scenario + Impact Analysis').item.json.impact_analysis} }}",
+        "options":{}
+      },
+      "id":"8","name":"Constraint-Aware Design Alternatives","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1540,0]
+    },
+    {
+      "parameters": {
+        "method":"POST","url":"={{$env.BACKEND_URL || 'http://127.0.0.1:8000'}}/report/html",
+        "sendBody":true,"specifyBody":"json",
+        "jsonBody":"={{ {scenario:$('Scenario + Impact Analysis').item.json, spatial:$('Spatial Analysis').item.json, impact_analysis:$('Scenario + Impact Analysis').item.json.impact_analysis, planning_knowledge:$('Scenario + Impact Analysis').item.json.planning_knowledge, alternatives:$('Constraint-Aware Design Alternatives').item.json.alternatives} }}",
+        "options":{}
+      },
+      "id":"9","name":"Planning Report Build","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[1760,0]
+    },
+    {
+      "parameters": {
+        "respondWith":"json",
+        "responseBody":"={{ {query:$('Planner Orchestrator').item.json.query, parse:$('Parse Scenario').item.json, context:$('Digital Twin Context').item.json, spatial:$('Spatial Analysis').item.json, rag:$('Scenario + Impact Analysis').item.json.planning_knowledge, impact:$('Scenario + Impact Analysis').item.json.impact_analysis, alternatives:$('Constraint-Aware Design Alternatives').item.json, report_url:'Use POST /report/pdf or /report/html for export.'} }}",
+        "options":{}
+      },
+      "id":"10","name":"Planner Response","type":"n8n-nodes-base.respondToWebhook","typeVersion":1,"position":[1980,0]
+    }
+  ],
+  "connections": {
+    "Planner Webhook":{"main":[[{"node":"Planner Orchestrator","type":"main","index":0}]]},
+    "Planner Orchestrator":{"main":[[{"node":"Parse Scenario","type":"main","index":0}]]},
+    "Parse Scenario":{"main":[[{"node":"Digital Twin Context","type":"main","index":0}]]},
+    "Digital Twin Context":{"main":[[{"node":"Spatial Analysis","type":"main","index":0}]]},
+    "Spatial Analysis":{"main":[[{"node":"Planning RAG","type":"main","index":0}]]},
+    "Planning RAG":{"main":[[{"node":"Scenario + Impact Analysis","type":"main","index":0}]]},
+    "Scenario + Impact Analysis":{"main":[[{"node":"Constraint-Aware Design Alternatives","type":"main","index":0}]]},
+    "Constraint-Aware Design Alternatives":{"main":[[{"node":"Planning Report Build","type":"main","index":0}]]},
+    "Planning Report Build":{"main":[[{"node":"Planner Response","type":"main","index":0}]]}
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "2"
+}

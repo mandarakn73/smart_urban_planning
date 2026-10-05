@@ -1,0 +1,53 @@
+{
+  "test_location": {
+    "latitude": 13.0958,
+    "longitude": 77.5789,
+    "radius_m": 500
+  },
+  "context_counts": {
+    "roads": 50,
+    "buildings": 1,
+    "transit": 1,
+    "landuse": 0,
+    "green_water": 0,
+    "pois": 1,
+    "traffic_events": 0
+  },
+  "spatial_findings": {
+    "schools": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "hospitals": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "police": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "fire_stations": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "bus_stops": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "roads": {
+      "count_within_radius": 200,
+      "nearest_m": 3.16
+    },
+    "green_water_features": {
+      "count_within_radius": 0,
+      "nearest_m": null
+    },
+    "traffic_events": {
+      "count_within_radius": 0
+    }
+  },
+  "rag_status": "knowledge_base_empty",
+  "scenario_status": "ok",
+  "design_status": "ok",
+  "design_feature_count": 5
+}

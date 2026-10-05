@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Smart Urban Planning Assistant – Bengaluru</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>Smart Urban Planning Assistant</h1>
+      <p>Bengaluru • Location-aware urban context and conceptual planning prototype</p>
+    </div>
+    <div class="badge">Prototype</div>
+  </header>
+
+  <main>
+    <section class="panel controls">
+      <div class="section-title">
+        <div>
+          <h2>Site Analysis</h2>
+          <p>Enter a location and proposed development.</p>
+        </div>
+        <span id="status" class="status-pill idle">Ready</span>
+      </div>
+
+      <div class="form-grid">
+        <label>Latitude<input id="lat" type="number" step="any" value="12.9716"></label>
+        <label>Longitude<input id="lon" type="number" step="any" value="77.5946"></label>
+        <label>Radius (m)<input id="radius" type="number" min="50" step="50" value="500"></label>
+        <label>Development type
+          <select id="dev">
+            <option value="residential">Residential</option>
+            <option value="commercial">Commercial</option>
+            <option value="industrial">Industrial</option>
+            <option value="mixed-use">Mixed-use</option>
+            <option value="office">Office</option>
+            <option value="retail">Retail</option>
+            <option value="hospitality">Hospitality</option>
+            <option value="school">School</option>
+            <option value="hospital">Hospital</option>
+          </select>
+        </label>
+        <label>Units<input id="units" type="number" min="1" step="1" value="500"></label>
+        <button id="run" class="primary">Analyze Site</button>
+      </div>
+    </section>
+
+    <section class="map-wrap panel">
+      <div class="map-head">
+        <div>
+          <h2>Site Map</h2>
+          <span id="siteLabel">12.97160, 77.59460 • 500 m radius</span>
+        </div>
+        <div class="legend">
+          <span><i class="dot site"></i>Site</span>
+          <span><i class="dot school"></i>Schools</span>
+          <span><i class="dot hospital"></i>Hospitals</span>
+          <span><i class="dot transit"></i>Bus stops</span>
+          <span><i class="dot park"></i>Parks</span>
+          <span><i class="dot road"></i>Roads</span>
+          <span><i class="dot planned"></i>Concept plan</span>
+        </div>
+      </div>
+      <div id="map"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title compact">
+        <div>
+          <h2>Existing Urban Context</h2>
+          <p>Observed features from the processed Bengaluru datasets. Feature lists are capped for display.</p>
+        </div>
+      </div>
+      <div id="contextCards" class="card-grid"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title compact">
+        <div>
+          <h2>Spatial Analysis</h2>
+          <p>Full proximity counts and nearest distances within the requested radius.</p>
+        </div>
+      </div>
+      <div id="analysisCards" class="card-grid"></div>
+      <div id="analysisNotes" class="notes"></div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title compact">
+        <div>
+          <h2>Impact Analysis</h2>
+          <p>Evidence-based cross-domain interpretation. Unsupported risk scores are not fabricated.</p>
+        </div>
+      </div>
+      <div id="impactContent" class="impact-grid"></div>
+    </section>
+
+    <section class="two-col">
+      <div class="panel">
+        <div class="section-title compact">
+          <div>
+            <h2>Planning Knowledge (RAG)</h2>
+            <p>Rules and planning documents retrieved for this scenario.</p>
+          </div>
+        </div>
+        <div id="ragContent" class="empty-state">Run an analysis to retrieve planning knowledge.</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title compact">
+          <div>
+            <h2>Scenario</h2>
+            <p>Structured representation of the proposed development.</p>
+          </div>
+        </div>
+        <div id="scenarioContent" class="scenario-box">Run an analysis to generate the scenario summary.</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-title compact">
+        <div>
+          <h2>Planning Design Studio</h2>
+          <p>Use an actual parcel when available, generate constraint-aware alternatives, explain the design decisions, and export the result.</p>
+        </div>
+        <span id="designStatus" class="status-pill idle">Waiting for analysis</span>
+      </div>
+
+      <div class="parcel-upload-box">
+        <div>
+          <strong>Actual parcel boundary</strong>
+          <p>Upload a WGS84 GeoJSON Polygon/MultiPolygon. The uploaded parcel replaces the conceptual square.</p>
+        </div>
+        <div class="parcel-controls">
+          <input id="parcelFile" type="file" accept=".geojson,.json">
+          <button id="parcelBtn" class="secondary">Upload Parcel</button>
+          <span id="parcelStatus" class="mini-status">No parcel uploaded</span>
+        </div>
+      </div>
+
+      <div class="design-controls">
+        <label>
+          Conceptual site area (m²) — fallback
+          <input id="siteArea" type="number" min="1000" step="1000" value="40000">
+        </label>
+        <button id="designBtn" class="primary" disabled>Generate 3 Planning Options</button>
+        <button id="reportPdfBtn" class="secondary" disabled>Download Planning Report</button>
+        <button id="reportHtmlBtn" class="secondary" disabled>Open Report</button>
+      </div>
+
+      <div id="designContent" class="empty-state">
+        Run analysis first, then generate planning alternatives.
+      </div>
+
+      <div id="alternativeContent" class="empty-state">
+        <strong>Planning alternatives</strong><br>
+        Three options will appear here: Balanced, Open-space priority, and Development efficiency.
+      </div>
+
+      <div id="decisionContent" class="empty-state">
+        <strong>Explainable design decisions</strong><br>
+        The system will record why access, preserved context, block layout and planning evidence influenced the selected option.
+      </div>
+
+      <div class="download-row">
+        <button id="geojsonBtn" class="secondary" disabled>Download Selected GeoJSON</button>
+        <button id="planJsonBtn" class="secondary" disabled>Download Plan JSON</button>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
